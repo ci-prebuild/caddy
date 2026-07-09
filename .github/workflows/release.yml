@@ -2,6 +2,8 @@ name: Release
 
 env:
   PKG_VERSION: "2026.07.09-1"
+  XCADDY_URL: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_amd64.tar.gz
+  XCADDY_SUM: sha256:2f96dde11b8ecbb7d652c20e05fddbfd2f58c622b464104309eae512406193cf
 
   # Preview mode: Publishes the build output as a CI artifact instead of creating
   # a release, allowing for manual inspection of the output. This mode is
@@ -44,13 +46,9 @@ jobs:
           # WARN: When changing this to a newer version, make sure that the GLIBC isnt too new, as this can cause issues
           # with portablity on older systems that dont follow ubuntus more rapid release cadence.
           os: ubuntu-22.04
-          xcaddy_url: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_amd64.tar.gz
-          xcaddy_sum: sha256:2f96dde11b8ecbb7d652c20e05fddbfd2f58c622b464104309eae512406193cf
         - build: arm64
           # Version should be kept in lockstep with the x86_64 version
-          os: ubuntu-22.04-arm
-          xcaddy_url: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_arm64.tar.gz
-          xcaddy_sum: sha256:6ecb9665a2d654697fe79c379bff5d90a9e8aa9165d4b63f8cb21614c5e5e323
+          os: ubuntu-22.04
 
     steps:
       - uses: actions/setup-go@v6
@@ -66,18 +64,20 @@ jobs:
           EOF
       - name: Download xcaddy
         run: |
-          curl -L "${{ matrix.xcaddy_url }}" -o xcaddy.tar.gz
+          curl -L "${{ env.XCADDY_URL }}" -o xcaddy.tar.gz
           tar -zxvf xcaddy.tar.gz xcaddy
 
+      # build deb action does not support arm runner so
+      # we cross-compile
       - name: Build caddy-l4
         run: |
-          ./xcaddy build --with github.com/mholt/caddy-l4
+          GOARCH=${{ matrix.build }} ./xcaddy build --with github.com/mholt/caddy-l4
           cp caddy "$CADDY_L4_BIN"
           mkdir -p debian/caddy-l4/usr/local/bin
           cp caddy debian/caddy-l4/usr/local/bin/
       - name: Build mainline caddy
         run: |
-          ./xcaddy build
+          GOARCH=${{ matrix.build }} ./xcaddy build
           cp caddy "$CADDY_BIN"
           mkdir -p debian/caddy/usr/local/bin
           cp caddy debian/caddy/usr/local/bin/
