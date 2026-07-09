@@ -56,6 +56,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: 1.26.3
+          cache: false
       - name: Prepare dist folder
         run: |
           mkdir -p dist
