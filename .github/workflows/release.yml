@@ -1,0 +1,110 @@
+name: Release
+
+env:
+  PKG_VERSION: "2026.07.09-1"
+
+  # Preview mode: Publishes the build output as a CI artifact instead of creating
+  # a release, allowing for manual inspection of the output. This mode is
+  # activated if the CI run was triggered by events other than pushed tags, or
+  # if the repository is a fork.
+  preview: ${{ !startsWith(github.ref, 'refs/tags/') || github.repository != 'ci-prebuild/helix' }}
+
+on:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+'
+    - '[0-9]+.[0-9]+.[0-9]+'
+    branches:
+    - 'patch/ci-release-*'
+    - 'main'
+  pull_request:
+    paths:
+    - '.github/workflows/release.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.build }}
+    env:
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: 1
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false # don't fail other jobs if one fails
+      matrix:
+        build: [amd64, arm64]
+        include:
+        - build: amd64
+          # WARN: When changing this to a newer version, make sure that the GLIBC isnt too new, as this can cause issues
+          # with portablity on older systems that dont follow ubuntus more rapid release cadence.
+          os: ubuntu-22.04
+          xcaddy_url: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_amd64.tar.gz
+          xcaddy_sum: sha256:2f96dde11b8ecbb7d652c20e05fddbfd2f58c622b464104309eae512406193cf
+        - build: arm64
+          # Version should be kept in lockstep with the x86_64 version
+          os: ubuntu-22.04-arm
+          xcaddy_url: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_arm64.tar.gz
+          xcaddy_sum: sha256:6ecb9665a2d654697fe79c379bff5d90a9e8aa9165d4b63f8cb21614c5e5e323
+
+    steps:
+      - uses: actions/setup-go@v6
+        with:
+          go-version: 1.26.3
+      - name: Prepare dist folder
+        run: |
+          mkdir -p dist
+          cat <<EOF >>$GITHUB_ENV
+          CADDY_BIN=dist/caddy_${{ env.PKG_VERSION }}_${{ matrix.build }}
+          CADDY_L4_BIN=dist/caddy-l4_${{ env.PKG_VERSION }}_${{ matrix.build }}
+          EOF
+      - name: Download xcaddy
+        run: |
+          curl -L "${{ matrix.xcaddy_url }}" -o xcaddy.tar.gz
+          tar -zxvf xcaddy.tar.gz xcaddy
+
+      - name: Build caddy-l4
+        run: |
+          ./xcaddy build --with github.com/mholt/caddy-l4
+          cp caddy "$CADDY_L4_BIN"
+      - name: Build mainline caddy
+        run: |
+          ./xcaddy build
+          cp caddy "$CADDY_BIN"
+
+      - name: Upload ${{ env.CADDY_BIN }} to artifacts
+        uses: actions/upload-artifact@v7
+        if: env.preview == 'true'
+        with:
+          path: ${{ env.CADDY_BIN }}
+          archive: false
+          if-no-files-found: error
+      - name: Upload ${{ env.CADDY_L4_BIN }} to artifacts
+        uses: actions/upload-artifact@v7
+        if: env.preview == 'true'
+        with:
+          path: ${{ env.CADDY_L4_BIN }}
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload ${{ env.CADDY_BIN }} to release
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        if: env.preview == 'false'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.CADDY_BIN }}
+          tag: ${{ github.ref_name }}
+          overwrite: true
+      - name: Upload ${{ env.CADDY_L4_BIN }} to release
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        if: env.preview == 'false'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.CADDY_L4_BIN }}
+          tag: ${{ github.ref_name }}
+          overwrite: true
