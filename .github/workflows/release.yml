@@ -51,6 +51,11 @@ jobs:
           os: ubuntu-22.04
 
     steps:
+      - name: Checkout sources for packaging
+        uses: actions/checkout@v7
+        with:
+          path: "__CI_PREBUILD__"
+
       - uses: actions/setup-go@v6
         with:
           go-version: 1.26.3
@@ -73,20 +78,20 @@ jobs:
         run: |
           GOARCH=${{ matrix.build }} ./xcaddy build --with github.com/mholt/caddy-l4
           cp caddy "$CADDY_L4_BIN"
-          mkdir -p debian/caddy-l4/usr/local/bin
-          cp caddy debian/caddy-l4/usr/local/bin/
+          mkdir -p __CI_PREBUILD__/debian/caddy-l4/usr/local/bin
+          cp caddy __CI_PREBUILD__/debian/caddy-l4/usr/local/bin/
       - name: Build mainline caddy
         run: |
           GOARCH=${{ matrix.build }} ./xcaddy build
           cp caddy "$CADDY_BIN"
-          mkdir -p debian/caddy/usr/local/bin
-          cp caddy debian/caddy/usr/local/bin/
+          mkdir -p __CI_PREBUILD__/debian/caddy/usr/local/bin
+          cp caddy __CI_PREBUILD__/debian/caddy/usr/local/bin/
 
       - name: Build caddy-l4 deb
         uses: jiro4989/build-deb-action@86e86ceb88b13157fa569663d43c89346505fc3e
         with:
           package: caddy-l4
-          package_root: debian/caddy-l4
+          package_root: __CI_PREBUILD__/debian/caddy-l4
           maintainer: selfhoster1312
           version: ${{ env.PKG_VERSION }}
           arch: ${{ matrix.build }}
@@ -96,7 +101,7 @@ jobs:
         uses: jiro4989/build-deb-action@86e86ceb88b13157fa569663d43c89346505fc3e
         with:
           package: caddy
-          package_root: debian/caddy
+          package_root: __CI_PREBUILD__/debian/caddy
           maintainer: selfhoster1312
           version: ${{ env.PKG_VERSION }}
           arch: ${{ matrix.build }}
