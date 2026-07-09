@@ -1,0 +1,28 @@
+authelia.localhost {
+        reverse_proxy 127.0.0.1:8081 {
+                header_up X-Real-IP {remote_host}
+        }
+}
+
+authenticated-php.localhost {
+        forward_auth localhost:8081 {
+                uri /api/authz/forward-auth
+                copy_headers Remote-User Remote-Groups Remote-Email Remote-Name
+        }
+        root * /var/www/authenticated-php.localhost/www
+        file_server
+        php_fastcgi unix//run/php/authenticated.sock
+}
+
+basic-auth-subpath.localhost {
+        root * /var/www/basic-auth-subpath.localhost/www
+        file_server {
+                browse {
+                        reveal_symlinks
+                }
+        }
+        basic_auth /private/* {
+                # admin:admin
+                admin $2a$14$2DbSVTm5VPmSWBDEzsfBOe.eA7LJPqJ65qlFDb3qkh.qZIzkaNN2W
+        }
+}

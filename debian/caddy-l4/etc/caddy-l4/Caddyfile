@@ -1,0 +1,32 @@
+{
+    # log {
+    #     output file /var/log/caddy-l4/caddy.log {
+    #         roll_size 10MB
+    #         roll_keep 5
+    #     }
+    # }
+
+    layer4 {
+        0.0.0.0:80 {
+            @domain1 http host mydomain1.example.com
+            route @domain1 {
+                proxy 192.168.1.2:80
+            }
+
+            @domain2 http host mydomain2.example.com *.mydomain2.example.com
+            route @domain2 {
+                proxy 192.168.1.2:80
+            }
+        }
+        0.0.0.0:443 {
+            @domain1https tls sni mydomain1.example.com
+            route @domain1https {
+                proxy 192.168.1.2:443
+            }
+            @domain2https tls sni mydomain2.example.com *.mydomain2.example.com
+            route @domain2https {
+                proxy 192.168.1.3:443
+            }
+        }
+    }
+}

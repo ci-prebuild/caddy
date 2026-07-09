@@ -73,10 +73,34 @@ jobs:
         run: |
           ./xcaddy build --with github.com/mholt/caddy-l4
           cp caddy "$CADDY_L4_BIN"
+          mkdir -p debian/caddy-l4/usr/local/bin
+          cp caddy debian/caddy-l4/usr/local/bin/
       - name: Build mainline caddy
         run: |
           ./xcaddy build
           cp caddy "$CADDY_BIN"
+          mkdir -p debian/caddy/usr/local/bin
+          cp caddy debian/caddy/usr/local/bin/
+
+      - name: Build caddy-l4 deb
+        uses: jiro4989/build-deb-action@86e86ceb88b13157fa569663d43c89346505fc3e
+        with:
+          package: caddy-l4
+          package_root: debian/caddy-l4
+          maintainer: selfhoster1312
+          version: ${{ env.PKG_VERSION }}
+          arch: ${{ matrix.build }}
+        id: build-deb-caddy-l4
+
+      - name: Build caddy mainline deb
+        uses: jiro4989/build-deb-action@86e86ceb88b13157fa569663d43c89346505fc3e
+        with:
+          package: caddy
+          package_root: debian/caddy
+          maintainer: selfhoster1312
+          version: ${{ env.PKG_VERSION }}
+          arch: ${{ matrix.build }}
+        id: build-deb-caddy
 
       - name: Upload ${{ env.CADDY_BIN }} to artifacts
         uses: actions/upload-artifact@v7
@@ -90,6 +114,20 @@ jobs:
         if: env.preview == 'true'
         with:
           path: ${{ env.CADDY_L4_BIN }}
+          archive: false
+          if-no-files-found: error
+      - name: Upload caddy deb to artifacts
+        uses: actions/upload-artifact@v7
+        if: env.preview == 'true'
+        with:
+          path: ${{ steps.build-deb-caddy.outputs.file_name }}
+          archive: false
+          if-no-files-found: error
+      - name: Upload caddy-l4 deb to artifacts
+        uses: actions/upload-artifact@v7
+        if: env.preview == 'true'
+        with:
+          path: ${{ steps.build-deb-caddy-l4.outputs.file_name }}
           archive: false
           if-no-files-found: error
 
@@ -107,5 +145,21 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ env.CADDY_L4_BIN }}
+          tag: ${{ github.ref_name }}
+          overwrite: true
+      - name: Upload caddy deb to release
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        if: env.preview == 'false'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.build-deb-caddy.outputs.file_name }}
+          tag: ${{ github.ref_name }}
+          overwrite: true
+      - name: Upload caddy-l4 deb to release
+        uses: svenstaro/upload-release-action@29e53e917877a24fad85510ded594ab3c9ca12de # 2.11.5
+        if: env.preview == 'false'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.build-deb-caddy-l4.outputs.file_name }}
           tag: ${{ github.ref_name }}
           overwrite: true
