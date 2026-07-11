@@ -1,1 +1,2 @@
 adduser --group --system caddy
+systemctl daemon-reload
