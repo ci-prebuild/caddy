@@ -7,7 +7,8 @@ if ! test -z "$(git status --porcelain)"; then
   exit 1
 fi
 
-date="$(date +'%Y.%m.%d')-1"
+# If we add -1 it's not recognized by the workflow as a release
+date="$(date +'%Y.%m.%d')"
 sed -i "s/PKG_VERSION: \".*\"/PKG_VERSION: \"$date\"/" .github/workflows/release.yml
 git add .github/workflows/release.yml
 
