@@ -1,7 +1,7 @@
 name: Release
 
 env:
-  PKG_VERSION: "2026.07.11-1"
+  PKG_VERSION: "2026.07.12"
   XCADDY_URL: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_amd64.tar.gz
   XCADDY_SUM: sha256:2f96dde11b8ecbb7d652c20e05fddbfd2f58c622b464104309eae512406193cf
 
