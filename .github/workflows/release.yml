@@ -79,7 +79,7 @@ jobs:
           GOARCH=${{ matrix.build }} ./xcaddy build --with github.com/mholt/caddy-l4
           cp caddy "$CADDY_L4_BIN"
           mkdir -p __CI_PREBUILD__/debian/caddy-l4/usr/local/bin
-          cp caddy __CI_PREBUILD__/debian/caddy-l4/usr/local/bin/
+          cp caddy __CI_PREBUILD__/debian/caddy-l4/usr/local/bin/caddy-l4
       - name: Build mainline caddy
         run: |
           GOARCH=${{ matrix.build }} ./xcaddy build
