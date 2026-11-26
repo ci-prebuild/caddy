@@ -1,9 +1,9 @@
 name: Release
 
 env:
-  PKG_VERSION: "2026.07.16"
-  XCADDY_URL: https://github.com/caddyserver/xcaddy/releases/download/v0.4.5/xcaddy_0.4.5_linux_amd64.tar.gz
-  XCADDY_SUM: sha256:2f96dde11b8ecbb7d652c20e05fddbfd2f58c622b464104309eae512406193cf
+  PKG_VERSION: "2026.11.26"
+  XCADDY_URL: https://github.com/caddyserver/xcaddy/releases/download/v0.4.7/xcaddy_0.4.7_linux_amd64.tar.gz
+  XCADDY_SUM: sha256:e6d2882fb751b9697cdb73b0da8b8a7393f0d7f2cb47afa79a23982c4c61d2d4
 
   # Preview mode: Publishes the build output as a CI artifact instead of creating
   # a release, allowing for manual inspection of the output. This mode is
